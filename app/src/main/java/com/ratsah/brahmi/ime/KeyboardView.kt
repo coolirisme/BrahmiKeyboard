@@ -66,11 +66,34 @@ class KeyboardView(context: Context) : FrameLayout(context) {
    */
   private var palette: KeyboardPalette = theme.paletteFor(isSystemDark)
 
-  /** The keyboard is never taller than this fraction of the screen. */
-  private val maxKeyboardHeightFraction: Float = 0.36f
+  /**
+   * Fraction of the current window height the keyboard is allowed to
+   * occupy. Landscape windows are much shorter than portrait, so we
+   * give the keyboard a bigger slice there to keep keys tappable
+   * without eating the entire text field on rotate/unfold.
+   */
+  private val portraitHeightFraction: Float = 0.36f
+  private val landscapeHeightFraction: Float = 0.55f
+
+  /**
+   * On wide windows (unfolded foldable landscape, tablet, ChromeOS
+   * free-form) a full-width keyboard makes each key absurdly wide and
+   * out of thumb reach. When the current window is wider than
+   * [wideWindowThresholdDp], the rows container is capped to
+   * [maxKeyboardWidthDp] and centered - the extra strip on each side
+   * keeps painting the keyboard palette so it still looks like one
+   * continuous surface.
+   */
+  private val wideWindowThresholdDp: Int = 720
+  private val maxKeyboardWidthDp: Int = 720
 
   /** Maximum row count across all pages (consonants page = top row + 5). */
   private val maxRows: Int = 6
+
+  /** Absolute row-height bounds. Prevent absurdly tall keys on giant
+   *  tablets and absurdly short keys on phone landscape / split-screen. */
+  private val minRowHeightPx: Int get() = dp(36)
+  private val maxRowHeightPx: Int get() = dp(56)
 
   private val outerVerticalPadding: Int = dp(0)
   private val keyMargin: Int = dp(2)
@@ -95,21 +118,51 @@ class KeyboardView(context: Context) : FrameLayout(context) {
   }
 
   /**
-   * Row height derived from the screen height so that the tallest page
-   * (the consonants page, with [maxRows] rows) fits inside
-   * [maxKeyboardHeightFraction] of the screen.
+   * Row height derived from the current window configuration. Recomputed
+   * on [onConfigurationChanged] so rotate/fold/resize all resize keys
+   * correctly without needing a fresh IME view. Backed by a `var` (not a
+   * one-shot construction-time snapshot) so subsequent row builds pick
+   * up the new value.
    */
-  private val rowHeight: Int = run {
-    val screenH = resources.displayMetrics.heightPixels
-    val budget = (screenH * maxKeyboardHeightFraction).toInt() - outerVerticalPadding * 2
-    (budget / maxRows).coerceAtLeast(dp(28))
-  }
+  private var rowHeight: Int = computeRowHeight()
 
   // Text sizes scale with row height so the visual ratios stay constant.
-  private val rowHeightDp: Float = rowHeight / resources.displayMetrics.density
-  private val mainTextSp: Float = (rowHeightDp * 0.38f).coerceIn(11f, 22f)
-  private val mainTextSmallSp: Float = mainTextSp * 0.64f
-  private val hintTextSp: Float = mainTextSp * 0.45f
+  // Using computed getters (not one-shot vals) so a rebuild after a
+  // config change automatically picks up the new [rowHeight].
+  private val rowHeightDp: Float get() = rowHeight / resources.displayMetrics.density
+  private val mainTextSp: Float get() = (rowHeightDp * 0.38f).coerceIn(11f, 22f)
+  private val mainTextSmallSp: Float get() = mainTextSp * 0.64f
+  private val hintTextSp: Float get() = mainTextSp * 0.45f
+
+  /**
+   * Row-height budget for the current [resources] configuration.
+   *
+   * Uses [Configuration.screenHeightDp] (the current window height, not
+   * the physical display) so free-form / split-screen windows on
+   * ChromeOS and multi-window on Android also get a keyboard sized for
+   * the space they actually have. The landscape branch bumps the
+   * fraction so short landscape windows still get tappable keys.
+   */
+  private fun computeRowHeight(): Int {
+    val config = resources.configuration
+    val isLandscape = config.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val fraction = if (isLandscape) landscapeHeightFraction else portraitHeightFraction
+    val screenHeightPx = (config.screenHeightDp * resources.displayMetrics.density).toInt()
+    val budget = (screenHeightPx * fraction).toInt() - outerVerticalPadding * 2
+    return (budget / maxRows).coerceIn(minRowHeightPx, maxRowHeightPx)
+  }
+
+  /**
+   * Width the rows container should occupy. Full-window on phones and
+   * small tablets; capped and centered on wide windows so keys stay in
+   * reachable thumb range on unfolded foldables, landscape tablets,
+   * and free-form ChromeOS windows.
+   */
+  private fun computeRowsContainerWidth(): Int {
+    val screenWidthDp = resources.configuration.screenWidthDp
+    return if (screenWidthDp > wideWindowThresholdDp) dp(maxKeyboardWidthDp)
+    else MATCH_PARENT
+  }
 
   /** Holds the keyboard rows. The outer FrameLayout overlays popups on top. */
   private val rowsContainer: LinearLayout = LinearLayout(context).apply {
@@ -130,11 +183,15 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     // also shows the keyboard color in dark theme, Otherwise the nav-bar
     // area falls back to the IME window's default.
     setBackgroundColor(palette.background)
-    // Width fills the IME window; height wraps the rows so the
-    // FrameLayout has a natural size to report to the IME framework.
+    // Rows container width follows the current window class: full-width
+    // on phone-class windows, capped + centered on wide (tablet /
+    // unfolded foldable / ChromeOS free-form) windows.
     addView(
       rowsContainer,
-      LayoutParams(MATCH_PARENT, LayoutParams.WRAP_CONTENT),
+      LayoutParams(
+        computeRowsContainerWidth(),
+        LayoutParams.WRAP_CONTENT,
+      ).apply { gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP },
     )
 
     // On Android 15+ (and mandatory for apps targeting Android 16) the IME
@@ -196,16 +253,53 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     get() = palette
 
   /**
-   * The "System default" theme depends on the system dark-mode flag; when
-   * the user flips it, re-resolve the palette so we swap between light and
-   * dark variants without having to hide and reshow the IME.
+   * Reacts to every window-configuration change the framework tells us
+   * about - rotation, fold/unfold, split-screen resize, ChromeOS
+   * free-form resize, day/night mode flip, etc. Three things can move:
+   *
+   *  1. The palette, when the "System default" theme resolves to a new
+   *     dark-mode variant.
+   *  2. [rowHeight], when the window height changes (rotation, fold,
+   *     resize, or an orientation flip that toggles the portrait vs
+   *     landscape height fraction). Rebuilding all rows picks up the
+   *     new value through the [rowHeightDp] getter.
+   *  3. The rows container width, when the window crosses the
+   *     [wideWindowThresholdDp] boundary - so a phone rotated into
+   *     landscape can promote to a centered narrow keyboard on a
+   *     large-screen device, and an unfolded foldable can collapse
+   *     back to full-width when refolded.
+   *
+   * All three refreshes are coalesced into a single rebuild pass so
+   * the view swap only happens once per config change.
    */
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)
+
+    var dirty = false
+
     val newPalette = theme.paletteFor(isSystemDark)
     if (newPalette != palette) {
       palette = newPalette
       setBackgroundColor(palette.background)
+      dirty = true
+    }
+
+    val newRowHeight = computeRowHeight()
+    if (newRowHeight != rowHeight) {
+      rowHeight = newRowHeight
+      dirty = true
+    }
+
+    val newContainerWidth = computeRowsContainerWidth()
+    val lp = rowsContainer.layoutParams as LayoutParams
+    if (lp.width != newContainerWidth) {
+      lp.width = newContainerWidth
+      lp.gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
+      rowsContainer.layoutParams = lp
+      dirty = true
+    }
+
+    if (dirty) {
       rebuildTopRow()
       rebuildPageRows()
     }
