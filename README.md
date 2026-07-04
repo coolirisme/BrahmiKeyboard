@@ -1,4 +1,8 @@
-# Brahmi Keyboard
+<p align="center">
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" width="128" alt="Brahmi Keyboard icon"/>
+</p>
+
+<h1 align="center">Brahmi Keyboard</h1>
 
 A modern Android keyboard (IME) for typing in the ancient **Brāhmī** script -
 the common ancestor of Devanagari, Bengali, Tamil, Sinhala, Tibetan, Thai, and
