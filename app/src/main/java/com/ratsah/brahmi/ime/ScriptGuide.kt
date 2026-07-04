@@ -100,7 +100,7 @@ object ScriptGuides {
    *  - Syllabic vocalic R/L use the `◌̩` syllabic marker.
    *  - Long vowels use the IPA length mark `ː` (Sanskrit /e/ and /o/ are
    *    long by default and shown as `eː` / `oː`).
-   *  - Anusvara/candrabindu show as a superscript `ⁿ`, visarga as `ḥ`.
+   *  - Anusvara/chandrabindu show as a superscript `ⁿ`, visarga as `ḥ`.
    *  - Punctuation, virama and the Brahmi number block are omitted -
    *    those have no phonetic value, so the guide falls back to the
    *    Brahmi glyph for them.
@@ -146,7 +146,7 @@ object ScriptGuides {
     0x11074 to "o",   // OLD TAMIL SHORT O vowel sign
     0x11075 to "ɭ",   // OLD TAMIL LLA
     // Signs
-    0x11000 to "ⁿ",   // candrabindu (vowel nasalization)
+    0x11000 to "ⁿ",   // chandrabindu (vowel nasalization)
     0x11001 to "ⁿ",   // anusvara
     0x11002 to "ḥ",   // visarga
     // Digits - show as Latin so users can read off the value.

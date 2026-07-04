@@ -270,7 +270,7 @@ class BrahmiInputMethodService : InputMethodService() {
   }
 
   /**
-   * If [text] is exactly one Brahmi consonant code point (U+11013–U+11034),
+   * If [text] is exactly one Brahmi consonant code point (U+11013-U+11034),
    * return that code point so it can be tracked as the active consonant.
    * Anything else (vowels, matras, signs, virama, digits, punctuation)
    * returns `null`, which clears any previous active state.
