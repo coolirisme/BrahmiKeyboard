@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">Brahmi Keyboard</string>
+    <string name="ime_label">Brahmi Keyboard</string>
+    <string name="subtype_label_brahmi">Brāhmī (&#x11029;&#x11046;&#x1102D;&#x11038;&#x11033;&#x11046;&#x1102B;&#x1103B;)</string>
+
+    <string name="setup_title">Brahmi Keyboard</string>
+
+    <string name="action_share">Share app</string>
+    <string name="share_chooser_title">Share Brahmi Keyboard</string>
+    <string name="share_message">Type in the ancient Brahmi script with this modern keyboard: %1$s</string>
+
+    <string name="action_info">About</string>
+    <string name="info_dialog_title">Brahmi Keyboard</string>
+    <string name="info_dialog_tagline">A modern keyboard for the ancient Brahmi script.</string>
+    <string name="info_dialog_version">Version %1$s</string>
+    <string name="info_dialog_repo_label">View source on GitHub</string>
+    <string name="info_dialog_repo_url" translatable="false">https://github.com/coolirisme/BrahmiKeyboard</string>
+    <string name="info_dialog_dismiss">Close</string>
+    <string name="setup_step1_title">1. Enable in system settings</string>
+    <string name="setup_step1_body">Open Languages &amp; input → On-screen keyboard and turn on "Brahmi Keyboard".</string>
+    <string name="setup_step1_action">Open keyboard settings</string>
+    <string name="setup_step2_title">2. Pick the Brahmi keyboard</string>
+    <string name="setup_step2_body">Tap any text field, then choose "Brahmi Keyboard" from the keyboard switcher.</string>
+    <string name="setup_step2_action">Choose input method</string>
+    <string name="setup_step3_title">3. Try it out</string>
+    <string name="setup_step3_hint">Type something here…</string>
+    <string name="setup_font_warning">If you see □ tofu boxes, your system font is missing some/all characters from the Brahmi alphabet.</string>
+
+    <string name="setup_guide_title">Script guide</string>
+    <string name="setup_guide_body">Choose a secondary script to show as a small hint under each key.</string>
+    <string name="setup_guide_dropdown_label">Hint script</string>
+
+    <string name="setup_theme_title">Keyboard theme</string>
+    <string name="setup_theme_body">Pick a color theme for the on-screen keyboard.</string>
+    <string name="setup_theme_dropdown_label">Theme</string>
+
+    <string name="setup_catalog_title">Learn the Brahmi alphabet</string>
+    <string name="setup_catalog_body">Browse every Brahmi character with its Unicode name, pronunciation and equivalent in your chosen script guide.</string>
+    <string name="setup_catalog_action">Character Catalog</string>
+
+    <string name="catalog_title">Brahmi alphabet</string>
+    <string name="catalog_back">Back</string>
+    <string name="catalog_intro_title">Unicode Brahmi block</string>
+    <string name="catalog_intro_body">All %1$d assigned characters from U+11000 to U+1107F, as they appear in the official Unicode chart.</string>
+</resources>
