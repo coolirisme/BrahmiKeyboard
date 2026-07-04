@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.window.core.layout.WindowSizeClass
 import com.ratsah.brahmi.catalog.CatalogActivity
 import com.ratsah.brahmi.ime.KeyboardPalette
 import com.ratsah.brahmi.ime.KeyboardTheme
@@ -230,78 +232,150 @@ private fun shareApp(context: Context) {
   context.startActivity(chooser)
 }
 
+/**
+ * Adaptive setup screen. On compact widths (phone portrait) the setup
+ * steps and preferences stack in a single scrolling column, preserving
+ * the existing phone UX. On medium/expanded widths (unfolded foldables,
+ * tablets, ChromeOS free-form windows) the content splits into two
+ * side-by-side panes: setup steps on the left, preferences (script
+ * guide + keyboard theme with live preview) on the right.
+ *
+ * The breakpoint is driven by [currentWindowAdaptiveInfo] from
+ * Compose Material 3 Adaptive, using the standard 600dp width
+ * threshold ([WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND]).
+ */
 @Composable
 private fun SetupScreen(contentPadding: PaddingValues) {
-  val context = LocalContext.current
-  Column(
-    modifier = Modifier
-        .fillMaxSize()
-        .padding(contentPadding)
-        .consumeWindowInsets(contentPadding)
-        .imePadding()
-        .verticalScroll(rememberScrollState())
-        .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(12.dp),
-  ) {
-    StepCard(
-      title = stringResource(R.string.setup_step1_title),
-      body = stringResource(R.string.setup_step1_body),
-      actionLabel = stringResource(R.string.setup_step1_action),
-      onAction = {
-        context.startActivity(
-          Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-      },
-    )
-    StepCard(
-      title = stringResource(R.string.setup_step2_title),
-      body = stringResource(R.string.setup_step2_body),
-      actionLabel = stringResource(R.string.setup_step2_action),
-      onAction = {
-        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showInputMethodPicker()
-      },
-    )
+  val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+  val useTwoPanes = windowSizeClass.isWidthAtLeastBreakpoint(
+    WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND
+  )
 
-    ScriptGuideCard()
+  val outerModifier = Modifier
+      .fillMaxSize()
+      .padding(contentPadding)
+      .consumeWindowInsets(contentPadding)
+      .imePadding()
+      .verticalScroll(rememberScrollState())
+      .padding(16.dp)
 
-    KeyboardThemeCard()
-
-    StepCard(
-      title = stringResource(R.string.setup_catalog_title),
-      body = stringResource(R.string.setup_catalog_body),
-      actionLabel = stringResource(R.string.setup_catalog_action),
-      onAction = {
-        context.startActivity(Intent(context, CatalogActivity::class.java))
-      },
-    )
-
-    Card(elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+  if (useTwoPanes) {
+    Row(
+      modifier = outerModifier,
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
       Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
-        Text(
-          text = stringResource(R.string.setup_step3_title),
-          style = MaterialTheme.typography.titleMedium,
-        )
-        var text by remember { mutableStateOf("") }
-        OutlinedTextField(
-          value = text,
-          onValueChange = { text = it },
-          placeholder = { Text(stringResource(R.string.setup_step3_hint)) },
-          modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-          text = stringResource(R.string.setup_font_warning),
-          style = MaterialTheme.typography.bodySmall,
-        )
+        SetupEnableSteps()
+        SetupCatalogAndTest()
+      }
+      Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        SetupPreferencesContent()
       }
     }
+  } else {
+    Column(
+      modifier = outerModifier,
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      SetupEnableSteps()
+      SetupPreferencesContent()
+      SetupCatalogAndTest()
+    }
   }
+}
+
+/**
+ * The first two onboarding cards - enable the IME in system settings
+ * and switch to it from the picker. On wide layouts they head the
+ * primary (left) pane; on compact they lead the single scrolling column.
+ */
+@Composable
+private fun SetupEnableSteps() {
+  val context = LocalContext.current
+  StepCard(
+    title = stringResource(R.string.setup_step1_title),
+    body = stringResource(R.string.setup_step1_body),
+    actionLabel = stringResource(R.string.setup_step1_action),
+    onAction = {
+      context.startActivity(
+        Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      )
+    },
+  )
+  StepCard(
+    title = stringResource(R.string.setup_step2_title),
+    body = stringResource(R.string.setup_step2_body),
+    actionLabel = stringResource(R.string.setup_step2_action),
+    onAction = {
+      val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+      imm.showInputMethodPicker()
+    },
+  )
+}
+
+/**
+ * The catalog launcher + "try it out" text field. Rendered after the
+ * preference cards on compact so the user has already picked their
+ * script/theme before they see the sample sheet and test input; on
+ * wide layouts these tail the primary (left) pane below the enable
+ * steps, since preferences live in the supporting (right) pane.
+ */
+@Composable
+private fun SetupCatalogAndTest() {
+  val context = LocalContext.current
+  StepCard(
+    title = stringResource(R.string.setup_catalog_title),
+    body = stringResource(R.string.setup_catalog_body),
+    actionLabel = stringResource(R.string.setup_catalog_action),
+    onAction = {
+      context.startActivity(Intent(context, CatalogActivity::class.java))
+    },
+  )
+  Card(elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Column(
+      modifier = Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Text(
+        text = stringResource(R.string.setup_step3_title),
+        style = MaterialTheme.typography.titleMedium,
+      )
+      var text by remember { mutableStateOf("") }
+      OutlinedTextField(
+        value = text,
+        onValueChange = { text = it },
+        placeholder = { Text(stringResource(R.string.setup_step3_hint)) },
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Text(
+        text = stringResource(R.string.setup_font_warning),
+        style = MaterialTheme.typography.bodySmall,
+      )
+    }
+  }
+}
+
+/**
+ * Preference cards (script guide + keyboard theme). These preview the
+ * IME's on-key labels and palette, so on wide layouts they live in the
+ * supporting (right) pane where the user can tweak them while glancing
+ * at the setup steps. On compact they sit between the enable steps and
+ * the catalog + test field so the user picks their look-and-feel
+ * before opening the sample sheet.
+ */
+@Composable
+private fun SetupPreferencesContent() {
+  ScriptGuideCard()
+  KeyboardThemeCard()
 }
 
 /**

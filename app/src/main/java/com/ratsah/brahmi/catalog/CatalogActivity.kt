@@ -18,6 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.window.core.layout.WindowSizeClass
 import com.ratsah.brahmi.R
 import com.ratsah.brahmi.ime.ScriptGuide
 import com.ratsah.brahmi.ime.ScriptGuides
@@ -91,6 +97,17 @@ private fun CatalogScreen(onBack: () -> Unit) {
   // catalog is opened.
   val guide = remember { ScriptGuides.byId(ScriptPreferences.getGuideId(context)) }
 
+  // Compose Material 3 Adaptive: on compact widths (phone portrait,
+  // folded foldable) show the classic single-column LazyColumn with
+  // sticky category headers; on medium+ widths (unfolded foldable,
+  // tablet, ChromeOS free-form) switch to a LazyVerticalGrid that
+  // packs 2-4 entry cells per row so the extra real estate isn't
+  // wasted on a lone narrow column of glyphs.
+  val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+  val useGrid = windowSizeClass.isWidthAtLeastBreakpoint(
+    WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND
+  )
+
   Scaffold(
     topBar = {
       TopAppBar(
@@ -110,10 +127,11 @@ private fun CatalogScreen(onBack: () -> Unit) {
     },
     modifier = Modifier.fillMaxSize(),
   ) { innerPadding ->
-    CatalogList(
-      guide = guide,
-      contentPadding = innerPadding,
-    )
+    if (useGrid) {
+      CatalogGrid(guide = guide, contentPadding = innerPadding)
+    } else {
+      CatalogList(guide = guide, contentPadding = innerPadding)
+    }
   }
 }
 
@@ -149,6 +167,75 @@ private fun CatalogList(
         )
       }
       item(key = "s:${category.title}") {
+        Spacer(Modifier.size(16.dp))
+      }
+    }
+  }
+}
+
+/**
+ * Multi-column catalog for wide windows. Uses [GridCells.Adaptive] with
+ * a 320 dp minimum so the effective column count scales naturally with
+ * available width: 2 columns on typical tablets (~720-1000 dp), 3 on
+ * a landscape tablet or an unfolded foldable (~1080-1400 dp), 4 on
+ * large ChromeOS windows (~1600 dp+).
+ *
+ * The catalog intro, per-category header, and inter-category spacer
+ * span the full grid width via [GridItemSpan] (`maxLineSpan`) so the
+ * "section" structure is preserved across all column counts. Sticky
+ * headers aren't available in [LazyVerticalGrid]; the trade-off is
+ * acceptable here because a wider window shows many more rows at
+ * once, reducing the need to pin a category label to the top.
+ */
+@Composable
+private fun CatalogGrid(
+  guide: ScriptGuide,
+  contentPadding: PaddingValues,
+) {
+  LazyVerticalGrid(
+    columns = GridCells.Adaptive(minSize = 320.dp),
+    modifier = Modifier.fillMaxSize(),
+    contentPadding = PaddingValues(
+      start = 16.dp,
+      end = 16.dp,
+      top = contentPadding.calculateTopPadding() + 8.dp,
+      bottom = contentPadding.calculateBottomPadding() + 24.dp,
+    ),
+    verticalArrangement = Arrangement.spacedBy(0.dp),
+    horizontalArrangement = Arrangement.spacedBy(16.dp),
+  ) {
+    item(
+      key = "header",
+      span = { GridItemSpan(maxLineSpan) },
+    ) {
+      Column {
+        CatalogIntro()
+        Spacer(Modifier.size(8.dp))
+      }
+    }
+
+    BrahmiCatalog.CATEGORIES.forEach { category ->
+      item(
+        key = "h:${category.title}",
+        span = { GridItemSpan(maxLineSpan) },
+      ) {
+        CategoryHeader(category)
+      }
+      items(
+        items = category.entries,
+        key = { "e:${it.codePoint}" },
+      ) { entry ->
+        Column {
+          CatalogRow(entry = entry, guide = guide)
+          HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+          )
+        }
+      }
+      item(
+        key = "s:${category.title}",
+        span = { GridItemSpan(maxLineSpan) },
+      ) {
         Spacer(Modifier.size(16.dp))
       }
     }
