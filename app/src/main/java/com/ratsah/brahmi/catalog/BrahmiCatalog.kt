@@ -49,7 +49,7 @@ object BrahmiCatalog {
     title = "Various signs",
     subtitle = "Modifier marks that attach to a base letter to indicate nasalisation or pre-aspiration.",
     entries = listOf(
-      sign(0x11000, "Sign Candrabindu", "m̐"),
+      sign(0x11000, "Sign Chandrabindu", "m̐"),
       sign(0x11001, "Sign Anusvara", "ṃ"),
       sign(0x11002, "Sign Visarga", "ḥ"),
       sign(0x11003, "Sign Jihvamuliya", "ẖ"),

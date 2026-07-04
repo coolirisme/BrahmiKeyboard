@@ -105,12 +105,12 @@ object BrahmiLayouts {
    * main grid:
    *
    *   U+11001 𑀁 BRAHMI SIGN ANUSVARA           (default tap)
-   *   U+11000 𑀀 BRAHMI SIGN CANDRABINDU        (popup)
+   *   U+11000 𑀀 BRAHMI SIGN CHANDRABINDU        (popup)
    *   U+11003 𑀃 BRAHMI SIGN JIHVAMULIYA        (popup)
    *   U+11004 𑀄 BRAHMI SIGN UPADHMANIYA        (popup)
    *
    * Pairing them follows the same convention as most Devanagari IMEs
-   * (anusvara = tap, candrabindu et al. = long-press), and keeps the
+   * (anusvara = tap, chandrabindu et al. = long-press), and keeps the
    * consonants signs row aligned with the 10-column grid above.
    */
   private fun signKey(codePoint: Int): Key = Key(
@@ -263,7 +263,7 @@ object BrahmiLayouts {
    *  Sibilants   0x11030..0x11032  śa ṣa sa
    *  ha          0x11033
    *  ḷa          0x11034
-   *  Signs:      0x11001 anusvara (long-press -> 0x11000 candrabindu),
+   *  Signs:      0x11001 anusvara (long-press -> 0x11000 chandrabindu),
    *              0x11002 visarga, 0x11046 virama
    */
   val CONSONANTS: KeyboardPage = KeyboardPage(
