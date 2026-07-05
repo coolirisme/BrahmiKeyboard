@@ -1,0 +1,4 @@
+* Update to Android compileSdk 37 and adopt adaptive Material 3 layouts on
+  larger screens.
+* Refined edge-to-edge handling and internal cleanups.
+* First release published on F-Droid.

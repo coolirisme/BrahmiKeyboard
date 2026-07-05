@@ -1,0 +1,50 @@
+A modern Android keyboard (IME) for typing in the ancient Brahmi script -
+the common ancestor of Devanagari, Bengali, Tamil, Sinhala, Tibetan, Thai
+and most other scripts of South and Southeast Asia.
+
+The app ships every assigned character in the Unicode Brahmi block
+(U+11000 to U+1107F), a dynamic vowel row that composes consonant + matra
+syllables as you type, on-key hints in your choice of descendant script
+(Devanagari / Bengali / IPA), a browsable character catalog for learners,
+and ten keyboard themes including WCAG-AAA high-contrast palettes.
+
+<b>Features</b>
+
+* <b>Complete Brahmi block coverage.</b> All 109 assigned code points:
+  consonants, independent vowels, matras (dependent vowel signs), virama,
+  anusvara/chandrabindu/visarga, Old Tamil extensions, positional and
+  traditional numerals (1 to 1000), the number joiner, and the full
+  punctuation set.
+* <b>Smart syllable composition.</b> Tap a consonant to arm it; the top
+  row instantly switches from independent vowels to the corresponding
+  consonant + matra combined forms, matching how Indic IMEs like Gboard
+  behave.
+* <b>Script guides.</b> Optionally show a small hint under each key in
+  Devanagari, Bengali or IPA - so anyone who can read a modern descendant
+  script can start typing Brahmi right away. The keyboard always types
+  the Brahmi character; the guide only re-labels the key.
+* <b>Long-press popups.</b> Rarer characters (Bhattiprolu variant aa,
+  vocalic-LL matra, chandrabindu, jihvamuliya, upadhmaniya, Old Tamil
+  letters, extra punctuation dandas) live one long-press away, keeping
+  the main grid clean.
+* <b>Ten themes.</b> System-following light/dark, dedicated Light, Dark,
+  High Contrast (Light / Dark) with WCAG-AAA text contrast and thicker
+  borders for low-vision users, Sepia, Solarized Dark, Midnight Blue,
+  Monokai, and Darcula.
+* <b>Live settings.</b> Changing the guide or theme in the setup app
+  updates the running IME immediately.
+* <b>Character catalog.</b> A dedicated read-only browser for the entire
+  Brahmi Unicode block, organised by the official Unicode chart
+  categories, with the Unicode name, code point, IAST transliteration,
+  and equivalent in the chosen script guide for every character.
+* <b>Bundled font.</b> Ships Noto Sans Brahmi so the keyboard, previews
+  and catalog always render correctly, even if the system font is
+  missing the Brahmi block.
+* <b>Edge-to-edge, system-aware.</b> Correct handling of Android 15+
+  edge-to-edge IME windows.
+
+<b>Privacy</b>
+
+The keyboard runs entirely on-device. It contains no advertising, no
+analytics, no trackers, and no network permission at all. What you type
+never leaves your phone.

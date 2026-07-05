@@ -1,0 +1,39 @@
+# F-Droid build recipe for Brahmi Keyboard.
+#
+# This file mirrors the metadata format used by
+# https://gitlab.com/fdroid/fdroiddata so that F-Droid maintainers can
+# copy it verbatim (renamed to com.ratsah.brahmi.yml) when they add the
+# app to F-Droid.
+#
+# See https://f-droid.org/docs/Build_Metadata_Reference/ for the full
+# specification. Update `versionName`, `versionCode`, and `commit` (the
+# git tag) on every release, alongside `app/build.gradle.kts` and the
+# fastlane metadata under fastlane/metadata/android/.
+
+Categories:
+  - Writing
+License: MIT
+AuthorName: coolirisme
+AuthorWebSite: https://github.com/coolirisme
+WebSite: https://github.com/coolirisme/BrahmiKeyboard
+SourceCode: https://github.com/coolirisme/BrahmiKeyboard
+IssueTracker: https://github.com/coolirisme/BrahmiKeyboard/issues
+Changelog: https://github.com/coolirisme/BrahmiKeyboard/releases
+
+AutoName: Brahmi Keyboard
+
+RepoType: git
+Repo: https://github.com/coolirisme/BrahmiKeyboard.git
+
+Builds:
+  - versionName: 1.0.4
+    versionCode: 5
+    commit: v1.0.4
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.4
+CurrentVersionCode: 5

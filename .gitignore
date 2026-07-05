@@ -18,3 +18,7 @@
 .cxx
 local.properties
 *.aab
+
+# Fastlane / F-Droid metadata tooling
+fastlane/report.xml
+fastlane/README.md
