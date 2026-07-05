@@ -1,10 +1,9 @@
 package com.ratsah.brahmi.ime
 
-import android.content.Context
+import android.view.Window
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
-import android.os.Build
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -43,7 +42,7 @@ class BrahmiInputMethodService : InputMethodService() {
   /**
    * Watches the IME's user-facing settings in real time. The setup
    * activity runs in this same process, so any preference change fires
-   * immediately and we push the new value to the live keyboard view -
+   * immediately, and we push the new value to the live keyboard view -
    * no need to hide and reshow the IME.
    */
   private val prefsListener =
@@ -78,7 +77,10 @@ class BrahmiInputMethodService : InputMethodService() {
 
   // Always show the soft keyboard, even when a hardware keyboard is
   // reported. for Android 15+
-  override fun onEvaluateInputViewShown(): Boolean = true
+  override fun onEvaluateInputViewShown(): Boolean {
+    super.onEvaluateInputViewShown()
+    return true
+  }
 
   override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
     super.onStartInputView(info, restarting)
@@ -109,7 +111,7 @@ class BrahmiInputMethodService : InputMethodService() {
 
   /**
    * Reload the active [KeyboardTheme] from [ScriptPreferences] and push
-   * it through to the live [KeyboardView]. Also re-applies the IME
+   * it through to the live [KeyboardView]. Also, re-applies the IME
    * window styling so the system navigation-bar band tracks the new
    * palette (relevant for the high-contrast themes, which paint the
    * keyboard pure white or pure black regardless of system dark mode).
@@ -144,9 +146,7 @@ class BrahmiInputMethodService : InputMethodService() {
     val palette = keyboardView?.activePalette ?: theme.paletteFor(isSystemDark)
     @Suppress("DEPRECATION")
     w.navigationBarColor = palette.background
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      w.isNavigationBarContrastEnforced = false
-    }
+    w.isNavigationBarContrastEnforced = false
     WindowCompat.getInsetsController(w, w.decorView)
       .isAppearanceLightNavigationBars = !palette.isDarkKeyboard
   }
@@ -235,7 +235,7 @@ class BrahmiInputMethodService : InputMethodService() {
   }
 
   private fun showImePicker() {
-    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
     imm.showInputMethodPicker()
   }
 
@@ -268,7 +268,7 @@ class BrahmiInputMethodService : InputMethodService() {
       ic.commitText(combinedStr, 1)
     } else {
       // Cursor moved away from the consonant we expected. Don't delete
-      // anything we don't recognise - just insert the matra alone.
+      // anything we don't recognize - just insert the matra alone.
       ic.commitText(String(Character.toChars(matra)), 1)
     }
   }

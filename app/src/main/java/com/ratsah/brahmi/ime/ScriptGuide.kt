@@ -6,7 +6,7 @@ package com.ratsah.brahmi.ime
  *
  * The keyboard always types the Brahmi character; the guide just changes the
  * **label** drawn on the key, so users who can read Devanagari/Bengali/…
- * recognise what they are inserting.
+ * recognize what they are inserting.
  *
  * To add a new descendant script:
  *   1. Add a new private map (e.g. `TAMIL_MAP`) below.

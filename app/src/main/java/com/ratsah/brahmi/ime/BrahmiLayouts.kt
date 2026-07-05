@@ -5,7 +5,7 @@ import com.ratsah.brahmi.R
 /**
  * Brahmi script keyboard layouts.
  *
- * The keys are organised in three Gboard-style pages:
+ * The keys are organized in three Gboard-style pages:
  *   - [CONSONANTS] (default): the 33 Brahmi consonants in varga order, plus
  *     anusvara/visarga/virama and a toggle to vowels.
  *   - [VOWELS]: independent vowels and the dependent vowel signs (matras).
@@ -54,9 +54,9 @@ object BrahmiLayouts {
   /**
    * The word "Brāhmī" (the script's own name) written in Brahmi:
    */
-  private val brahmiWord: String = "𑀩𑁆𑀭𑀸𑀳𑁆𑀫𑀻"
+  private const val BRAHMI_WORD: String = "𑀩𑁆𑀭𑀸𑀳𑁆𑀫𑀻"
 
-  private val keySpace = Key(brahmiWord, KeyAction.Space, weight = 4f)
+  private val keySpace = Key(BRAHMI_WORD, KeyAction.Space, weight = 4f)
   private val keyGlobe = Key(
     label = "",
     action = KeyAction.SwitchIme,
@@ -327,9 +327,9 @@ object BrahmiLayouts {
   /**
    * Numbers and punctuation.
    *
-   *  Row 1 - positional Brahmi digits 0..9         0x11066..0x1106F
-   *  Row 2 - traditional Brahmi numerals 1..10     0x11052..0x1105B
-   *  Row 3 - traditional Brahmi numerals 20..1000  0x1105C..0x11065
+   *  Row 1 - positional Brahmi digits 0...9         0x11066...0x1106F
+   *  Row 2 - traditional Brahmi numerals 1...10     0x11052...0x1105B
+   *  Row 3 - traditional Brahmi numerals 20...1000  0x1105C...0x11065
    *           (tens 20-90, then 100, then 1000)
    *  Row 4 - common punctuation + wide delete
    *  Row 5 - bottom function row
@@ -423,7 +423,7 @@ object BrahmiLayouts {
       )
     }
     if (slot.matra == null) {
-      // Inherent /a/: bare consonants already represent C+a, so the
+      // Inherent /a/: bare consonants already represent C+a so the
       // "a" key just shows the consonant and won't change the editor.
       return Key(
         label = cp(activeConsonant),

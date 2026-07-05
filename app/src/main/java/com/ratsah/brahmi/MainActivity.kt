@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,12 +38,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -72,7 +74,6 @@ import androidx.compose.ui.unit.sp
 import androidx.window.core.layout.WindowSizeClass
 import com.ratsah.brahmi.catalog.CatalogActivity
 import com.ratsah.brahmi.ime.KeyboardPalette
-import com.ratsah.brahmi.ime.KeyboardTheme
 import com.ratsah.brahmi.ime.KeyboardThemes
 import com.ratsah.brahmi.ime.ScriptGuides
 import com.ratsah.brahmi.ime.ScriptPreferences
@@ -142,15 +143,15 @@ private fun AboutDialog(onDismiss: () -> Unit) {
   val context = LocalContext.current
   val versionName: String = remember(context) {
     runCatching {
-      @Suppress("DEPRECATION")
       context.packageManager.getPackageInfo(context.packageName, 0).versionName
     }.getOrNull().orEmpty()
   }
+  val resources = LocalResources.current
   val licenseText: String = remember(context) {
-    runCatching {
-      context.resources.openRawResource(R.raw.license)
+      runCatching {
+        resources.openRawResource(R.raw.license)
           .bufferedReader().use { it.readText() }
-    }.getOrNull().orEmpty().trim()
+      }.getOrNull().orEmpty().trim()
   }
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -180,7 +181,9 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
             textDecoration = TextDecoration.Underline,
           ),
-          modifier = Modifier.clickable { uriHandler.openUri(repoUrl) },
+          modifier = Modifier
+            .padding(vertical = 5.dp)
+            .clickable { uriHandler.openUri(repoUrl) },
         )
         if (licenseText.isNotBlank()) {
           Box(
@@ -197,7 +200,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                   shape = RoundedCornerShape(8.dp),
                 )
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 12.dp),
           ) {
             Text(
               text = licenseText,
@@ -368,7 +371,7 @@ private fun SetupCatalogAndTest() {
  * Preference cards (script guide + keyboard theme). These preview the
  * IME's on-key labels and palette, so on wide layouts they live in the
  * supporting (right) pane where the user can tweak them while glancing
- * at the setup steps. On compact they sit between the enable steps and
+ * at the setup steps. On compact layout they sit between the enable steps and
  * the catalog + test field so the user picks their look-and-feel
  * before opening the sample sheet.
  */
@@ -426,7 +429,7 @@ private fun ScriptGuideCard() {
           colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
           modifier = Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+              .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
 
         ExposedDropdownMenu(
@@ -513,7 +516,7 @@ private fun KeyboardThemeCard() {
           colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
           modifier = Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+              .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
 
         ExposedDropdownMenu(
@@ -619,7 +622,7 @@ private fun ThemePreviewStrip(palette: KeyboardPalette) {
   Box(
     modifier = Modifier
         .fillMaxWidth()
-        .height(44.dp)
+        .height(50.dp)
         .background(
           color = Color(palette.background),
           shape = RoundedCornerShape(6.dp),
@@ -689,7 +692,7 @@ private fun PreviewKey(
         color = textColor,
         fontFamily = SwatchBrahmiFont,
         fontWeight = FontWeight.Bold,
-        fontSize = 12.sp,
+        fontSize = 14.sp,
       )
     }
   }
@@ -705,7 +708,7 @@ private fun SwatchKey(
   Box(
     modifier = Modifier
         .width(20.dp)
-        .height(24.dp)
+        .height(20.dp)
         .background(color = fill, shape = RoundedCornerShape(2.dp))
         .border(width = 1.dp, color = stroke, shape = RoundedCornerShape(2.dp)),
     contentAlignment = Alignment.Center,

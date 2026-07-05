@@ -2,6 +2,7 @@ package com.ratsah.brahmi.ime
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 /**
  * Tiny wrapper around [SharedPreferences] for the IME's user-facing
@@ -32,7 +33,7 @@ object ScriptPreferences {
     prefs(context).getString(KEY_GUIDE_ID, ScriptGuides.DEFAULT.id) ?: ScriptGuides.DEFAULT.id
 
   fun setGuideId(context: Context, id: String) {
-    prefs(context).edit().putString(KEY_GUIDE_ID, id).apply()
+    prefs(context).edit { putString(KEY_GUIDE_ID, id) }
   }
 
   fun getTheme(context: Context): KeyboardTheme =
@@ -42,7 +43,7 @@ object ScriptPreferences {
     prefs(context).getString(KEY_THEME_ID, KeyboardThemes.DEFAULT.id) ?: KeyboardThemes.DEFAULT.id
 
   fun setThemeId(context: Context, id: String) {
-    prefs(context).edit().putString(KEY_THEME_ID, id).apply()
+    prefs(context).edit { putString(KEY_THEME_ID, id) }
   }
 
   /**
