@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.ratsah.brahmi"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -14,9 +14,9 @@ android {
     defaultConfig {
         applicationId = "com.ratsah.brahmi"
         minSdk = 29
-        targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        targetSdk = 37
+        versionCode = 4
+        versionName = "1.0.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

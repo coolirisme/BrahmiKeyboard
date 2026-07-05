@@ -76,6 +76,10 @@ class BrahmiInputMethodService : InputMethodService() {
     return view
   }
 
+  // Always show the soft keyboard, even when a hardware keyboard is
+  // reported. for Android 15+
+  override fun onEvaluateInputViewShown(): Boolean = true
+
   override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
     super.onStartInputView(info, restarting)
     // Order matters: apply theme first so the nav-bar styling below
