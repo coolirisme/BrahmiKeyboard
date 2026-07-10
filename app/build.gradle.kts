@@ -15,8 +15,8 @@ android {
     applicationId = "com.ratsah.brahmi"
     minSdk = 29
     targetSdk = 37
-    versionCode = 7
-    versionName = "1.2.0"
+    versionCode = 8
+    versionName = "1.3.0"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 

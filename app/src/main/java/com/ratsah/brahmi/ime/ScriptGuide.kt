@@ -230,7 +230,7 @@ object ScriptGuides {
   val ALL: List<ScriptGuide> = listOf(NONE, DEVANAGARI, BENGALI, IPA)
 
   /** Default guide for new installs. */
-  val DEFAULT: ScriptGuide = BENGALI
+  val DEFAULT: ScriptGuide = DEVANAGARI
 
   fun byId(id: String): ScriptGuide = ALL.firstOrNull { it.id == id } ?: DEFAULT
 }

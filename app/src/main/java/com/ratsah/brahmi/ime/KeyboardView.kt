@@ -244,11 +244,10 @@ class KeyboardView(context: Context) : FrameLayout(context) {
   fun setGuide(guide: ScriptGuide) {
     if (this.guide == guide) return
     this.guide = guide
-    // Page rows carry guide-derived hints and need a fresh build. The
-    // top row is re-issued by the IME service via [setTopRow] right
-    // after this call (with keys recomputed against the new guide), so
-    // there's no benefit to invalidating it here.
+    // Page rows carry guide-derived hints and need a fresh build.
     rebuildPageRows()
+    // Re-derive the top row's hints against the new guide.
+    renderTopRow()
   }
 
   /**
