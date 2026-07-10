@@ -98,6 +98,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun SetupScaffold() {
   val context = LocalContext.current
+  val uriHandler = LocalUriHandler.current
+  val donateUrl = stringResource(R.string.donate_url)
   var showAbout by remember { mutableStateOf(false) }
   Scaffold(
     modifier = Modifier.fillMaxSize(),
@@ -105,17 +107,25 @@ private fun SetupScaffold() {
       TopAppBar(
         title = { Text(stringResource(R.string.setup_title)) },
         actions = {
-          IconButton(onClick = { showAbout = true }) {
-            Icon(
-              painter = painterResource(R.drawable.ic_info_outline),
-              contentDescription = stringResource(R.string.action_info),
-            )
-          }
-          IconButton(onClick = { shareApp(context) }) {
-            Icon(
-              imageVector = Icons.Filled.Share,
-              contentDescription = stringResource(R.string.action_share),
-            )
+          Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+            IconButton(onClick = { uriHandler.openUri(donateUrl) }) {
+              Icon(
+                painter = painterResource(R.drawable.ic_coffee),
+                contentDescription = stringResource(R.string.action_donate),
+              )
+            }
+            IconButton(onClick = { showAbout = true }) {
+              Icon(
+                painter = painterResource(R.drawable.ic_info_outline),
+                contentDescription = stringResource(R.string.action_info),
+              )
+            }
+            IconButton(onClick = { shareApp(context) }) {
+              Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = stringResource(R.string.action_share),
+              )
+            }
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(

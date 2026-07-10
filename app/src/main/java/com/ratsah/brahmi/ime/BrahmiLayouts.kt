@@ -56,7 +56,12 @@ object BrahmiLayouts {
    */
   private const val BRAHMI_WORD: String = "𑀩𑁆𑀭𑀸𑀳𑁆𑀫𑀻"
 
-  private val keySpace = Key(BRAHMI_WORD, KeyAction.Space, weight = 4f)
+  private val keySpace = Key(
+    label = BRAHMI_WORD,
+    action = KeyAction.Space,
+    weight = 4f,
+    longPressAction = KeyAction.ShowImePicker,
+  )
   private val keyGlobe = Key(
     label = "",
     action = KeyAction.SwitchIme,

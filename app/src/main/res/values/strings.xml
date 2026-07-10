@@ -8,6 +8,8 @@
     <string name="action_share">Share app</string>
     <string name="share_chooser_title">Share Brahmi Keyboard</string>
     <string name="share_message">Type in the ancient Brahmi script with this modern keyboard: %1$s</string>
+    <string name="action_donate">Donate on Ko-fi</string>
+    <string name="donate_url" translatable="false">https://ko-fi.com/coolirisme</string>
 
     <string name="action_info">About</string>
     <string name="info_dialog_title">Brahmi Keyboard</string>
