@@ -31,6 +31,7 @@ class BrahmiInputMethodService : InputMethodService() {
   private var currentPageId: String = BrahmiLayouts.PAGE_CONSONANTS
   private var guide: ScriptGuide = ScriptGuides.NONE
   private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
+  private var lastWindowStyledPalette: KeyboardPalette? = null
 
   /**
    * Code point of the consonant the user just typed. While this is set,
@@ -84,16 +85,12 @@ class BrahmiInputMethodService : InputMethodService() {
 
   override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
     super.onStartInputView(info, restarting)
-    // Order matters: apply theme first so the nav-bar styling below
-    // uses the fresh palette instead of the previous session's colors.
-    applyThemeFromPreferences()
     applyWindowStyling()
-    // Always start a fresh editing session on the consonants page,
-    // and pick up any change the user made to the script-guide setting.
+    // Always start a fresh editing session on the consonants page.
     currentPageId = BrahmiLayouts.PAGE_CONSONANTS
     activeConsonant = null
-    applyGuideFromPreferences()
     keyboardView?.setPage(BrahmiLayouts.byId(currentPageId))
+    refreshTopRow()
   }
 
   /**
@@ -144,11 +141,13 @@ class BrahmiInputMethodService : InputMethodService() {
     val isSystemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
       Configuration.UI_MODE_NIGHT_YES
     val palette = keyboardView?.activePalette ?: theme.paletteFor(isSystemDark)
+    if (palette == lastWindowStyledPalette) return
     @Suppress("DEPRECATION")
     w.navigationBarColor = palette.background
     w.isNavigationBarContrastEnforced = false
     WindowCompat.getInsetsController(w, w.decorView)
       .isAppearanceLightNavigationBars = !palette.isDarkKeyboard
+    lastWindowStyledPalette = palette
   }
 
   /** Recompute the top vowel row based on [activeConsonant] and [guide]. */

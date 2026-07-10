@@ -177,6 +177,22 @@ class KeyboardView(context: Context) : FrameLayout(context) {
   private var topRowView: View? = null
   private val pageRowViews: MutableList<View> = mutableListOf()
 
+  /**
+   * Recycled views for the top vowel row.
+   */
+  private val topRowSlots: MutableList<TopRowSlot> = mutableListOf()
+
+  /**
+   * Persistent view holder for one slot in the recycled top vowel row.
+   */
+  private class TopRowSlot(
+    val container: LinearLayout,
+    val primary: TextView,
+    val hint: TextView,
+  ) {
+    var currentKey: Key? = null
+  }
+
   init {
     // Paint the keyboard background on the outer FrameLayout (not just on
     // [rowsContainer]) so the navigation-bar inset strip below the rows
@@ -227,7 +243,10 @@ class KeyboardView(context: Context) : FrameLayout(context) {
   fun setGuide(guide: ScriptGuide) {
     if (this.guide == guide) return
     this.guide = guide
-    rebuildTopRow()
+    // Page rows carry guide-derived hints and need a fresh build. The
+    // top row is re-issued by the IME service via [setTopRow] right
+    // after this call (with keys recomputed against the new guide), so
+    // there's no benefit to invalidating it here.
     rebuildPageRows()
   }
 
@@ -242,7 +261,10 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     this.theme = theme
     this.palette = newPalette
     setBackgroundColor(palette.background)
-    rebuildTopRow()
+    // Slot backgrounds bake the palette into their RippleDrawable at
+    // build time; force a fresh top-row structure to pick up the new
+    // colors.
+    invalidateTopRow()
     rebuildPageRows()
   }
 
@@ -300,7 +322,7 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     }
 
     if (dirty) {
-      rebuildTopRow()
+      invalidateTopRow()
       rebuildPageRows()
     }
   }
@@ -315,20 +337,154 @@ class KeyboardView(context: Context) : FrameLayout(context) {
   fun setTopRow(row: List<Key>?) {
     if (this.topRow == row) return
     this.topRow = row
-    rebuildTopRow()
+    renderTopRow()
   }
 
   /**
-   * Rebuild just the dynamic top vowel row, leaving every other key in
-   * place.
+   * Reconcile the top vowel row with the current [topRow] list, reusing
+   * existing slot views when the structure hasn't changed.
+   *
+   * A "structural" change (theme, guide, configuration, slot count)
+   * still needs a fresh build, and those callers go through
+   * [invalidateTopRow] first so this method rebuilds from scratch. The
+   * common case - the IME service handing us a new list of 10 vowel
+   * keys after a keystroke - takes the fast path: update text, hint
+   * text/visibility, colors, and the slot's [TopRowSlot.currentKey]
+   * pointer, then let the framework re-measure just the TextViews
+   * whose contents changed.
    */
-  private fun rebuildTopRow() {
+  private fun renderTopRow() {
+    val keys = topRow
+    if (keys.isNullOrEmpty()) {
+      topRowView?.let { rowsContainer.removeView(it) }
+      topRowView = null
+      topRowSlots.clear()
+      return
+    }
+    if (topRowView == null || topRowSlots.size != keys.size) {
+      buildTopRowStructure(keys.size)
+    }
+    for (i in keys.indices) {
+      applyKeyToSlot(topRowSlots[i], keys[i])
+    }
+  }
+
+  /**
+   * Discard the top-row structure so the next [renderTopRow] rebuilds
+   * it from scratch. Used when the palette, guide, row height, or
+   * container width have changed and simply re-applying content isn't
+   * enough (slot backgrounds and layout params bake those in at build
+   * time).
+   */
+  private fun invalidateTopRow() {
     topRowView?.let { rowsContainer.removeView(it) }
     topRowView = null
-    val keys = topRow ?: return
-    val view = buildRow(keys)
-    rowsContainer.addView(view, 0)
-    topRowView = view
+    topRowSlots.clear()
+    renderTopRow()
+  }
+
+  private fun buildTopRowStructure(slotCount: Int) {
+    topRowView?.let { rowsContainer.removeView(it) }
+    topRowSlots.clear()
+    val row = LinearLayout(context).apply {
+      orientation = LinearLayout.HORIZONTAL
+      layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, rowHeight)
+    }
+    repeat(slotCount) {
+      val slot = buildTopRowSlot()
+      val lp = LinearLayout.LayoutParams(0, MATCH_PARENT, 1f).apply {
+        setMargins(keyMargin, keyMargin, keyMargin, keyMargin)
+      }
+      row.addView(slot.container, lp)
+      topRowSlots.add(slot)
+    }
+    rowsContainer.addView(row, 0)
+    topRowView = row
+  }
+
+  /**
+   * Build the persistent view tree for one vowel-row slot. Listeners
+   * are attached exactly once here and read the current key back from
+   * [TopRowSlot.currentKey], so per-keystroke updates never have to
+   * allocate a fresh lambda.
+   */
+  @SuppressLint("ClickableViewAccessibility")
+  private fun buildTopRowSlot(): TopRowSlot {
+    val primary = TextView(context).apply {
+      // Vowel-row labels are always Brahmi (independent vowel or
+      // consonant + matra), so the bundled Noto Sans Brahmi is
+      // unconditionally the right typeface here.
+      setTypeface(brahmiTypeface, Typeface.BOLD)
+      gravity = Gravity.CENTER_HORIZONTAL
+      includeFontPadding = false
+      layoutParams = LinearLayout.LayoutParams(
+        MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+      )
+    }
+    val hint = TextView(context).apply {
+      setTypeface(null, Typeface.BOLD)
+      gravity = Gravity.CENTER
+      includeFontPadding = false
+      layoutParams = LinearLayout.LayoutParams(
+        MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+      )
+    }
+    val container = LinearLayout(context).apply {
+      orientation = LinearLayout.VERTICAL
+      gravity = Gravity.CENTER
+      setPadding(0, keyInnerVerticalPadding, 0, keyInnerVerticalPadding)
+      isClickable = true
+      isFocusable = true
+      background = makeKeyBackground(accent = false, hasPopup = false)
+      addView(primary)
+      addView(hint)
+    }
+    val slot = TopRowSlot(container, primary, hint)
+    container.setOnClickListener { v ->
+      slot.currentKey?.let { dispatchAction(v, it.action) }
+    }
+    container.setOnTouchListener { _, event ->
+      val k = slot.currentKey
+      if (k != null) {
+        when (event.actionMasked) {
+          MotionEvent.ACTION_DOWN -> showPressPreview(container, k)
+          MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dismissPressPreview()
+        }
+      }
+      false
+    }
+    return slot
+  }
+
+  private fun applyKeyToSlot(slot: TopRowSlot, key: Key) {
+    slot.currentKey = key
+    // Guard the [TextView.setText] call: setText always re-runs the
+    // full text pipeline (measure + layout + spannable rebuild) even
+    // when the string is identical, so short-circuiting here is the
+    // main reason recycling the row saves work. The size and color
+    // setters have their own internal "did anything change" checks
+    // so we call them unconditionally.
+    if (slot.primary.text?.toString() != key.label) {
+      slot.primary.text = key.label
+    }
+    val codePoints = key.label.codePointCount(0, key.label.length)
+    val sp = if (codePoints > 2) mainTextSmallSp else mainTextSp
+    slot.primary.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+    slot.primary.setTextColor(palette.keyTextColor)
+
+    val hintText = key.hint ?: key.brahmiCodePoint?.let { guide.labelFor(it) }
+    if (hintText != null) {
+      if (slot.hint.text?.toString() != hintText) {
+        slot.hint.text = hintText
+      }
+      slot.hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, hintTextSp)
+      slot.hint.setTextColor(palette.hintTextColor)
+      slot.hint.visibility = View.VISIBLE
+    } else {
+      slot.hint.visibility = View.GONE
+    }
   }
 
   /**
@@ -559,10 +715,16 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     view.setOnTouchListener { _, event ->
       when (event.actionMasked) {
         MotionEvent.ACTION_DOWN -> {
+          // Initial press: fire the haptic + action together.
           dispatchAction(view, action)
           val r = object : Runnable {
             override fun run() {
-              dispatchAction(view, action)
+              // Auto-repeat ticks fire the action only. Buzzing the
+              // vibrator on every tick (13+ Hz while backspace is
+              // held) is a real battery cost and adds no tactile
+              // signal the user can actually distinguish from the
+              // sustained buzz, so we deliberately skip haptic here.
+              onKeyAction?.invoke(action)
               handler.postDelayed(this, REPEAT_INTERVAL_MS)
             }
           }
@@ -810,8 +972,14 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     /** How long to wait after the initial press before auto-repeat begins. */
     private const val INITIAL_REPEAT_DELAY_MS: Long = 400L
 
-    /** Interval between auto-repeated events while the key is held. */
-    private const val REPEAT_INTERVAL_MS: Long = 50L
+    /**
+     * Interval between auto-repeated events while the key is held.
+     * Set well above 50 ms - a faster tick drains battery (more
+     * [android.view.inputmethod.InputConnection] round-trips, more
+     * ripple redraws) without letting the user actually meter their
+     * deletions any better than ~13 Hz already allows.
+     */
+    private const val REPEAT_INTERVAL_MS: Long = 75L
 
     /**
      * Overlay color painted on the scrim behind the long-press popup.
