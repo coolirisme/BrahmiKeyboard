@@ -21,6 +21,7 @@ import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
@@ -173,7 +174,7 @@ class KeyboardView(context: Context) : FrameLayout(context) {
 
   private var currentPopup: View? = null
   private var currentScrim: View? = null
-  private var currentPressPreview: View? = null
+  private var currentPressPreview: PopupWindow? = null
   private var topRowView: View? = null
   private val pageRowViews: MutableList<View> = mutableListOf()
 
@@ -594,12 +595,12 @@ class KeyboardView(context: Context) : FrameLayout(context) {
 
   private fun showPressPreview(anchor: View, key: Key) {
     dismissPressPreview()
+    if (!anchor.isAttachedToWindow || anchor.windowToken == null) return
 
     val container = LinearLayout(context).apply {
       orientation = LinearLayout.VERTICAL
       gravity = Gravity.CENTER
       background = makePopupBackground()
-      elevation = dp(8).toFloat()
       val pad = dp(8)
       setPadding(pad, dp(6), pad, dp(6))
     }
@@ -630,8 +631,11 @@ class KeyboardView(context: Context) : FrameLayout(context) {
 
     // Measure the balloon so we know where to place it. Width is at
     // least as wide as the underlying key so narrow glyphs (matras,
-    // lone vowels) still appear centred over the press.
-    val maxPreviewWidth = (width - dp(8) * 2).coerceAtLeast(dp(64))
+    // lone vowels) still appear centred over the press. Cap against
+    // the display width, not the keyboard width, since the balloon is
+    // hosted in a top-level PopupWindow.
+    val screenWidthPx = resources.displayMetrics.widthPixels
+    val maxPreviewWidth = (screenWidthPx - dp(8) * 2).coerceAtLeast(dp(64))
     container.measure(
       MeasureSpec.makeMeasureSpec(maxPreviewWidth, MeasureSpec.AT_MOST),
       MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
@@ -639,35 +643,54 @@ class KeyboardView(context: Context) : FrameLayout(context) {
     val previewW = container.measuredWidth.coerceAtLeast(anchor.width)
     val previewH = container.measuredHeight
 
-    // Position the balloon as a child of the keyboard FrameLayout, in
-    // coordinates relative to it. Center horizontally on the key, then
-    // clamp inside the keyboard so wide balloons don't overflow the
-    // edge. Place above the key when there's room, otherwise below
-    // (the top-row case).
+    // Position the balloon in IME-window-relative coordinates. A
+    // [PopupWindow] created with our window token behaves as a
+    // subwindow of the IME window, so the (x, y) passed to
+    // [PopupWindow.showAtLocation] are offsets from the *IME window's*
+    // top-left corner - not screen offsets. Passing screen offsets
+    // would push the popup down by the IME window's top-Y (typically
+    // the whole rest of the display), which lands the balloon at the
+    // bottom of the screen after screen-clipping.
+    //
+    // With window-relative coordinates, y goes negative for the top
+    // rows - and that's fine: subwindows are allowed to render above
+    // their parent window's bounds, up to the display edge, which is
+    // exactly the "balloon above the top row of keys" behavior we
+    // want.
     val anchorLoc = IntArray(2)
     anchor.getLocationInWindow(anchorLoc)
-    val myLoc = IntArray(2)
-    getLocationInWindow(myLoc)
-    val anchorRelX = anchorLoc[0] - myLoc[0]
-    val anchorRelY = anchorLoc[1] - myLoc[1]
     val gap = dp(2)
 
-    var x = anchorRelX + (anchor.width - previewW) / 2
-    x = x.coerceIn(0, (width - previewW).coerceAtLeast(0))
-    var y = anchorRelY - previewH - gap
-    if (y < 0) {
-      y = anchorRelY + anchor.height + gap
+    val x = (anchorLoc[0] + (anchor.width - previewW) / 2)
+      .coerceIn(0, (screenWidthPx - previewW).coerceAtLeast(0))
+    var y = anchorLoc[1] - previewH - gap
+    // Fallback: only if the "above" placement would spill off the
+    // top of the *display* (not just the IME window - a subwindow
+    // above the IME window is fine). Screen top-Y of the IME window
+    // equals our own screen-Y minus our in-window offset.
+    val myScreenLoc = IntArray(2)
+    getLocationOnScreen(myScreenLoc)
+    val myWindowLoc = IntArray(2)
+    getLocationInWindow(myWindowLoc)
+    val imeWindowTopScreenY = myScreenLoc[1] - myWindowLoc[1]
+    if (imeWindowTopScreenY + y < 0) {
+      y = anchorLoc[1] + anchor.height + gap
     }
 
-    val params = LayoutParams(previewW, previewH)
-    params.leftMargin = x
-    params.topMargin = y
-    addView(container, params)
-    currentPressPreview = container
+    val popup = PopupWindow(container, previewW, previewH, false).apply {
+      isTouchable = false
+      isFocusable = false
+      isOutsideTouchable = false
+      elevation = dp(8).toFloat()
+    }
+    runCatching {
+      popup.showAtLocation(this, Gravity.NO_GRAVITY, x, y)
+    }.onFailure { return }
+    currentPressPreview = popup
   }
 
   private fun dismissPressPreview() {
-    currentPressPreview?.let { removeView(it) }
+    currentPressPreview?.let { runCatching { it.dismiss() } }
     currentPressPreview = null
   }
 
