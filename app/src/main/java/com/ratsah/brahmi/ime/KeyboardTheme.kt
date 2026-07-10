@@ -251,7 +251,6 @@ object KeyboardThemes {
     iconTint = 0xFFCC7832.toInt(),      // orange icons complete the accent
     rippleColor = 0x66CC7832,           // orange ripple
     popupDotColor = 0xFF6A8759.toInt(), // JetBrains string-green pops against
-                                        // the orange border
     popupBackground = 0xFF3C3F41.toInt(),
     popupStroke = 0xFFCC7832.toInt(),   // orange popup border matches keys
     isDarkKeyboard = true,
